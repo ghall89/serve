@@ -1,0 +1,54 @@
+version: "3"
+
+tasks:
+  install-deps:
+    cmds:
+      - go mod tidy
+
+  build-darwin:
+    desc: "Build Darwin binary"
+    cmds:
+      - go build -o ./out/serve-darwin ./cmd/
+    env:
+      GOARCH: amd64
+      GOOS: darwin
+
+  build-linux:
+    desc: "Build Linux binary"
+    cmds:
+      - go build -o ./out/serve-linux ./cmd/
+    env:
+      GOARCH: amd64
+      GOOS: linux
+
+  build-windows:
+    desc: "Build Windows binary"
+    cmds:
+      - go build -o ./out/serve-windows ./cmd/
+    env:
+      GOARCH: amd64
+      GOOS: windows
+
+  build:
+    desc: "Build all binaries"
+    deps: [build-darwin, build-linux, build-windows]
+
+  run-darwin:
+    desc: "Build and run darwin binary"
+    cmd: "./out/serve-darwin"
+    deps: [build-darwin]
+
+  run-linux:
+    desc: "Build and run linux binary"
+    cmd: "./out/serve-linux"
+    deps: [build-linux]
+
+  run-windows:
+    desc: "Build and run windows binary"
+    cmd: "./out/serve-windows"
+    deps: [build-windows]
+
+  default:
+    desc: "Run the app"
+    cmds:
+      - go run ./cmd/
