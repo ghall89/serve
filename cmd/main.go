@@ -3,22 +3,31 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"os"
+
+	"github.com/charmbracelet/lipgloss"
 )
 
 func main() {
 	cwd, err := os.Getwd()
 	if err != nil {
-		log.Fatal(err)
+		errAndExit(err)
 	}
 
 	path := flag.String("path", cwd, "Path of directory to serve")
 	port := flag.Int("port", 8080, "Port to serve on")
-
-	fmt.Printf("Serving %s\n", *path)
+	flag.Parse()
 
 	if err := serveDir(path, port); err != nil {
-		log.Fatal(err)
+		errAndExit(err)
 	}
+}
+
+func errAndExit(e error) {
+	style := lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("9"))
+
+	fmt.Println(style.Render(e.Error()))
+	os.Exit(1)
 }
