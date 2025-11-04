@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/exec"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/eiannone/keyboard"
@@ -14,14 +15,12 @@ import (
 func main() {
 	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
 	if err != nil {
-		errAndExit(err, oldState)
+		errAndExit(err, oldState, nil)
 	}
-
-	// defer term.Restore(int(os.Stdin.Fd()), oldState)
 
 	cwd, err := os.Getwd()
 	if err != nil {
-		errAndExit(err, oldState)
+		errAndExit(err, oldState, nil)
 	}
 
 	path := flag.String("path", cwd, "Path of directory to serve")
@@ -30,27 +29,42 @@ func main() {
 
 	server, err := createServer(path, port)
 	if err != nil {
-		errAndExit(err, oldState)
+		errAndExit(err, oldState, server)
 	}
 
 	go func() {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			errAndExit(err, oldState)
+			errAndExit(err, oldState, server)
 		}
 	}()
 
 	displayStatus(*path, server.Addr)
 
 	go func() {
+		keyEvents, err := keyboard.GetKeys(10)
+		if err != nil {
+			panic(err)
+		}
+
 		for {
-			char, _, err := keyboard.GetSingleKey()
-			if err != nil {
-				panic(err)
-			}
-			if char == 'q' {
+			event := <-keyEvents
+
+			// ctrl-c
+			if event.Rune == '\x00' && event.Key == 3 {
 				exit(oldState, server)
 			}
-			fmt.Printf("You pressed: %q\r\n", char)
+
+			switch event.Rune {
+			case 'Q':
+				fallthrough
+			case 'q':
+				exit(oldState, server)
+			case 'O':
+				fallthrough
+			case 'o':
+				address := fmt.Sprintf("http://localhost%s", server.Addr)
+				exec.Command("open", address).Run()
+			}
 		}
 	}()
 
@@ -61,7 +75,7 @@ func exit(oldState *term.State, srv *http.Server) {
 	style := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("9"))
 
-	fmt.Println(style.Render("Shutting down server..."))
+	fmt.Println(style.Render("Shutting down server...\r"))
 
 	srv.Close()
 
@@ -69,13 +83,18 @@ func exit(oldState *term.State, srv *http.Server) {
 	os.Exit(0)
 }
 
-func errAndExit(e error, oldState *term.State) {
+func errAndExit(e error, oldState *term.State, srv *http.Server) {
 	term.Restore(int(os.Stdin.Fd()), oldState)
 
 	style := lipgloss.NewStyle().
 		Bold(true).
 		Foreground(lipgloss.Color("9"))
 
-	fmt.Println(style.Render(e.Error()))
+	fmt.Println(style.Render(e.Error(), "\r"))
+
+	if srv != nil {
+		srv.Close()
+	}
+
 	os.Exit(1)
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/charmbracelet/lipgloss"
 )
@@ -58,9 +59,10 @@ func displayStatus(d string, p string) error {
 			plainStyle.Render("Listening on: "),
 			urlStyle.Render(fmt.Sprintf("http://localhost%s", p)),
 		),
-		hintStyle.Render("(q)uit"),
+		hintStyle.Render("(q)uit, (o)pen in browser"),
 	)
 
-	fmt.Println(block)
+	fmt.Println(strings.ReplaceAll(block, "\n", "\r\n"), "\r")
+
 	return nil
 }
