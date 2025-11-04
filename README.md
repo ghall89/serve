@@ -15,3 +15,9 @@ You can also build for your specific platform with:
 - `task build-darwin` for macOS
 - `task build-linux` for Linux
 - `task build-windows` for Windows
+
+## Dependencies
+
+- [Lip Gloss](https://github.com/charmbracelet/lipgloss)
+- [x/term](https://pkg.go.dev/golang.org/x/term)
+- [keyboard](https://github.com/eiannone/keyboard)

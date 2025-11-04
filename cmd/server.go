@@ -7,23 +7,22 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-func serveDir(d *string, p *int) error {
-	fs := http.FileServer(http.Dir(*d))
+func createServer(dir *string, prt *int) (*http.Server, error) {
+	mux := http.NewServeMux()
+	fs := http.FileServer(http.Dir(*dir))
+	mux.Handle("/", noCache(fs))
 
-	http.Handle("/", noCache(fs))
-
-	port, err := getPort(p)
+	port, err := getPort(prt)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	displayStatus(*d, port)
-
-	if err := http.ListenAndServe(port, nil); err != nil {
-		return err
+	srv := &http.Server{
+		Addr:    port,
+		Handler: mux,
 	}
 
-	return nil
+	return srv, nil
 }
 
 func noCache(next http.Handler) http.Handler {
@@ -35,7 +34,7 @@ func noCache(next http.Handler) http.Handler {
 	})
 }
 
-func displayStatus(d string, p string) {
+func displayStatus(d string, p string) error {
 	plainStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("3"))
 
@@ -43,22 +42,25 @@ func displayStatus(d string, p string) {
 		Foreground(lipgloss.Color("4")).
 		Underline(true)
 
-	// hintStyle := lipgloss.NewStyle().
-	// 	PaddingTop(1).
-	// 	Faint(true)
+	hintStyle := lipgloss.NewStyle().
+		PaddingTop(1).
+		Faint(true)
 
-	fmt.Println(lipgloss.JoinVertical(
+	block := lipgloss.JoinVertical(
 		lipgloss.Top,
 		lipgloss.JoinHorizontal(
 			lipgloss.Left,
-			plainStyle.Render("Serving "),
+			plainStyle.Render("Serving: "),
 			urlStyle.Render(d),
 		),
 		lipgloss.JoinHorizontal(
 			lipgloss.Left,
-			plainStyle.Render("Listening on "),
-			urlStyle.Render(fmt.Sprintf("http://localhost/%s", p)),
+			plainStyle.Render("Listening on: "),
+			urlStyle.Render(fmt.Sprintf("http://localhost%s", p)),
 		),
-		// hintStyle.Render("(q)uit, (o)pen in browser"),
-	))
+		hintStyle.Render("(q)uit"),
+	)
+
+	fmt.Println(block)
+	return nil
 }
