@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"net"
 	"time"
@@ -9,8 +8,10 @@ import (
 
 func getPort(p *int) (string, error) {
 	if checkPort(*p) {
-		msg := fmt.Sprintf("Port %d is already in use.", *p)
-		return "", errors.New(msg)
+		port := *p + 1
+		msg := fmt.Sprintf("Port %d is already in use. Trying port %d.\r", *p, port)
+		fmt.Println(msg)
+		return getPort(&port)
 	}
 
 	return fmt.Sprintf(":%d", *p), nil
